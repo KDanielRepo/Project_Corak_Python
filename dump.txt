@@ -1,0 +1,76 @@
+widok
+# win32gui.EnumWindows(callback, None)
+# print(root.frame)
+# hwnd = win32gui.FindWindow(None, 'tk')  # Getting window handle
+# print(hwnd)
+# hwnd = root.winfo_id() getting hwnd with Tkinter windows
+# hwnd = root.GetHandle() getting hwnd with wx windows
+# lExStyle = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+# lExStyle |= win32con.WS_EX_TRANSPARENT | win32con.WS_EX_LAYERED
+# win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, lExStyle)
+___________________________________________________________________
+
+# while True:
+# if keyboard.is_pressed('y'):
+# take_screenshot()
+
+___________________________________________________________________
+SI
+# mnist = tf.keras.datasets.fashion_mnist
+# (training_images, training_labels), (test_images, test_labels) = mnist.load_data()
+#
+# plt.imshow(training_images[0])
+# print(training_labels[0])
+# print(training_images[0])
+#
+# training_images = training_images / 255.0
+# test_images = test_images / 255.0
+#
+# print(training_images[0])
+# model = tf.keras.models.Sequential([tf.keras.layers.Flatten(),
+#                                     tf.keras.layers.Dense(128, activation=tf.nn.relu),
+#                                     tf.keras.layers.Dense(10, activation=tf.nn.softmax)])
+# model.compile(optimizer=tf.keras.optimizers.Adam(),
+#               loss='sparse_categorical_crossentropy',
+#               metrics=['accuracy'])
+#
+# model.fit(training_images, training_labels, epochs=5)
+# model.evaluate(test_images, test_labels)
+
+    def capture(self):
+        # get the window image data
+        self.update_window_position()
+        wDC = win32gui.GetWindowDC(self.hwnd)
+        dcObj = win32ui.CreateDCFromHandle(wDC)
+        cDC = dcObj.CreateCompatibleDC()
+        dataBitMap = win32ui.CreateBitmap()
+        dataBitMap.CreateCompatibleBitmap(dcObj, self.width, self.height)
+        cDC.SelectObject(dataBitMap)
+        cDC.BitBlt((0, 0), (self.width, self.height), dcObj, (self.width, self.height), win32con.SRCCOPY)
+
+        # convert the raw data into a format opencv can read
+        #dataBitMap.SaveBitmapFile(cDC, 'debug.bmp')
+        signedIntsArray = dataBitMap.GetBitmapBits(True)
+        img = np.fromstring(signedIntsArray, dtype='uint8')
+        img.shape = (self.height, self.width, 4)
+
+        # free resources
+        dcObj.DeleteDC()
+        cDC.DeleteDC()
+        win32gui.ReleaseDC(self.hwnd, wDC)
+        win32gui.DeleteObject(dataBitMap.GetHandle())
+
+        # drop the alpha channel, or cv.matchTemplate() will throw an error like:
+        #   error: (-215:Assertion failed) (depth == CV_8U || depth == CV_32F) && type == _templ.type()
+        #   && _img.dims() <= 2 in function 'cv::matchTemplate'
+        # ODKOMENTUJ GDY POTRZEBNE BEDZIE POZBYCIE SIE KANALU ALFA
+        #img = img[...,:3]
+
+        # make image C_CONTIGUOUS to avoid errors that look like:
+        #   File ... in draw_rectangles
+        #   TypeError: an integer is required (got type tuple)
+        # see the discussion here:
+        # https://github.com/opencv/opencv/issues/14866#issuecomment-580207109
+        img = np.ascontiguousarray(img)
+
+        return img
